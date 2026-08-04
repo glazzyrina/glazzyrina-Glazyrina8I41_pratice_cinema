@@ -156,11 +156,18 @@ def cancel_or_refund_ticket(ticket_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/admin/films", response_model=schemas.FilmResponse, status_code=status.HTTP_201_CREATED, tags=["Admin Panel"])
 def admin_create_film(film_data: schemas.FilmCreate, db: Session = Depends(get_db)):
-    new_film = models.Film(title=film_data.title, description=film_data.description, duration_min=film_data.duration_min, age_rating=film_data.age_rating)
+    new_film = models.Film(
+        title=film_data.title, 
+        description=film_data.description, 
+        duration_min=film_data.duration_min, 
+        age_rating=film_data.age_rating,
+        poster_url=film_data.poster_url # Добавили сохранение ссылки
+    )
     db.add(new_film)
     db.commit()
     db.refresh(new_film)
     return new_film
+
 
 @app.post("/api/admin/seances", response_model=schemas.SeanceResponse, status_code=status.HTTP_201_CREATED, tags=["Admin Panel"])
 def admin_create_seance(seance_data: schemas.SeanceCreate, db: Session = Depends(get_db)):

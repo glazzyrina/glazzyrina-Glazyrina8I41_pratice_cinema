@@ -30,6 +30,7 @@ class FilmCreate(BaseModel):
     description: Optional[str] = None
     duration_min: int
     age_rating: str
+    poster_url: Optional[str] = None
 
 class FilmResponse(BaseModel):
     id: int
@@ -37,6 +38,7 @@ class FilmResponse(BaseModel):
     description: Optional[str] = None
     duration_min: int
     age_rating: str
+    poster_url: Optional[str] = None
     class Config:
         from_attributes = True
 

@@ -21,6 +21,7 @@ class Film(Base):
     description = Column(Text, nullable=True)
     duration_min = Column(Integer, nullable=False)
     age_rating = Column(String(10), nullable=False)
+    poster_url = Column(Text, nullable=True)
     
     seances = relationship("Seance", back_populates="film")
 
