@@ -21,7 +21,7 @@ const Header = () => {
                 
                 {role === 'Посетитель' && <Link to="/cabinet" style={{ color: '#fff', textDecoration: 'none' }}>Личный кабинет</Link>}
                 {role === 'Кассир' && <Link to="/hall" style={{ color: '#fff', textDecoration: 'none', background: '#28a745', padding: '5px 10px', borderRadius: '4px' }}>Касса</Link>}
-                {role === 'Администратор' && <Link to="/admin" style={{ color: '#fff', textDecoration: 'none', background: '#dc3545', padding: '5px 10px', borderRadius: '4px' }}>Админка</Link>}
+                {role === 'Администратор' && <Link to="/admin" style={{ color: '#fff', textDecoration: 'none', background: '#dc3545', padding: '5px 10px', borderRadius: '4px' }}>Панель управления</Link>}
 
                 {role ? (
                     <button onClick={handleLogout} style={{ background: 'transparent', border: '1px solid #fff', color: '#fff', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}>Выйти</button>
