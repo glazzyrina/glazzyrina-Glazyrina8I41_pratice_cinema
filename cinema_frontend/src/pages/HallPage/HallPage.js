@@ -62,15 +62,23 @@ const HallPage = () => {
         let url = actionType === 'sell' ? '/api/tickets/sell' : '/api/tickets/book';
 
         try {
+            const savedUserId = localStorage.getItem('user_id');
+
             for (const seat of selectedSeats) {
-                await API.post(url, { seance_id: seanceId, seat_id: seat.id });
+                await API.post(url, { 
+                    seance_id: Number(seanceId), 
+                    seat_id: Number(seat.seat_id || seat.id), // Проверяем оба варианта ключа места
+                    user_id: savedUserId ? Number(savedUserId) : 1 // Если ID пустой, передаем 1 (как дефолтного посетителя)
+                });
             }
             setSuccess(actionType === 'sell' ? 'Билеты успешно оформлены!' : 'Места забронированы!');
             setSelectedSeats([]);
             loadHallData();
         } catch (err) {
-            setError('Ошибка при оформлении мест.');
+            console.error("Детали ошибки 422:", err.response?.data);
+            setError('Ошибка при оформлении мест. Проверьте типы данных.');
         }
+
     };
 
     const getSeatColor = (seat) => {
@@ -93,7 +101,7 @@ const HallPage = () => {
     }, {});
 
     // Извлекаем только существующие ряды и сортируем их от большего к меньшему
-    const existingRows = Object.keys(seatsByRow).map(Number).sort((a, b) => b - a);
+    const existingRows = Object.keys(seatsByRow).map(Number).sort((a, b) => b + a);
 
     return (
         <div style={{ background: '#121212', minHeight: '100vh', color: '#fff', paddingBottom: '40px' }}>

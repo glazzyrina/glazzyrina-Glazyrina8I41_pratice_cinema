@@ -89,8 +89,8 @@ class TicketResponse(BaseModel):
     id: int
     seance_id: int
     seat_id: int
-    user_id: Optional[int]
-    sale_date_time: datetime
+    user_id: Optional[int] = None
     status: str
+    seance: Optional[FilmResponse] = None # Если FilmResponse объявлен выше
     class Config:
         from_attributes = True

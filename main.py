@@ -6,6 +6,8 @@ from database import get_db, engine
 import models
 import schemas
 import security
+from datetime import datetime
+
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -114,33 +116,66 @@ def get_seance_seats_map(seance_id: int, db: Session = Depends(get_db)):
 
 # CASHIER DESK
 
-@app.post("/api/tickets/book", response_model=schemas.TicketResponse, status_code=status.HTTP_201_CREATED, tags=["Cashier Desk"])
+@app.post("/api/tickets/book", tags=["Tickets"])
 def book_ticket(ticket_data: schemas.TicketBook, db: Session = Depends(get_db)):
-    existing = db.query(models.Ticket).filter_by(seance_id=ticket_data.seance_id, seat_id=ticket_data.seat_id).first()
+    # 1. Проверяем, не занято ли уже это место на этот сеанс
+    existing = db.query(models.Ticket).filter(
+        models.Ticket.seance_id == ticket_data.seance_id,
+        models.Ticket.seat_id == ticket_data.seat_id
+    ).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Место уже занято или забронировано!")
-    new_booking = models.Ticket(seance_id=ticket_data.seance_id, seat_id=ticket_data.seat_id, user_id=ticket_data.user_id, status="Забронировано")
-    db.add(new_booking)
-    db.commit()
-    db.refresh(new_booking)
-    return new_booking
+        raise HTTPException(status_code=400, detail="Это место уже занято или забронировано")
+    
+    # 2. Если фронтенд прислал пустой user_id, берем ID самого первого пользователя из базы
+    target_user_id = ticket_data.user_id
+    if target_user_id is None:
+        first_user = db.query(models.User).first()
+        target_user_id = first_user.id if first_user else 1
 
-@app.post("/api/tickets/sell", response_model=schemas.TicketResponse, status_code=status.HTTP_201_CREATED, tags=["Cashier Desk"])
-def sell_ticket(ticket_data: schemas.TicketSell, db: Session = Depends(get_db)):
-    existing = db.query(models.Ticket).filter_by(seance_id=ticket_data.seance_id, seat_id=ticket_data.seat_id).first()
+    # 3. Создаем бронь в базе данных
+    new_ticket = models.Ticket(
+        seance_id=ticket_data.seance_id,
+        seat_id=ticket_data.seat_id,
+        user_id=target_user_id,
+        status="Забронировано"
+    )
+    db.add(new_ticket)
+    db.commit()
+    return {"message": "Успешно забронировано"}
+
+
+@app.post("/api/tickets/sell", tags=["Tickets"])
+def sell_ticket(ticket_data: schemas.TicketBook, db: Session = Depends(get_db)):
+    # 1. Проверяем статус места
+    existing = db.query(models.Ticket).filter(
+        models.Ticket.seance_id == ticket_data.seance_id,
+        models.Ticket.seat_id == ticket_data.seat_id
+    ).first()
+    
+    # 2. Если кассир выкупает чью-то бронь — просто меняем статус на "Занято"
     if existing and existing.status == "Забронировано":
         existing.status = "Занято"
         db.commit()
-        db.refresh(existing)
-        return existing
+        return {"message": "Бронь успешно выкуплена кассиром"}
     elif existing:
         raise HTTPException(status_code=400, detail="Билет на это место уже продан!")
         
-    new_ticket = models.Ticket(seance_id=ticket_data.seance_id, seat_id=ticket_data.seat_id, user_id=ticket_data.user_id, status="Занято")
+    # 3. Если это прямая покупка на кассе без брони
+    target_user_id = ticket_data.user_id
+    if target_user_id is None:
+        first_user = db.query(models.User).first()
+        target_user_id = first_user.id if first_user else 1
+
+    new_ticket = models.Ticket(
+        seance_id=ticket_data.seance_id,
+        seat_id=ticket_data.seat_id,
+        user_id=target_user_id,
+        status="Занято"
+    )
     db.add(new_ticket)
     db.commit()
-    db.refresh(new_ticket)
-    return new_ticket
+    return {"message": "Билет успешно продан кассиром"}
+
 
 @app.post("/api/tickets/{ticket_id}/cancel", tags=["Cashier Desk"])
 def cancel_or_refund_ticket(ticket_id: int, db: Session = Depends(get_db)):
@@ -223,3 +258,63 @@ def admin_delete_film(film_id: int, db: Session = Depends(get_db)):
     db.delete(film)
     db.commit()
     return {"message": "Фильм успешно удален из афиши"}
+
+@app.get("/api/tickets/my", tags=["Tickets"])
+def get_my_tickets(username: str, db: Session = Depends(get_db)):
+    # 1. Находим пользователя по его имени
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    # 2. Достаем все билеты этого пользователя
+    tickets = db.query(models.Ticket).filter(models.Ticket.user_id == user.id).all()
+    
+    # 3. Вручную собираем простой и понятный JSON для фронтенда, чтобы избежать ошибки 500
+    result = []
+    for ticket in tickets:
+        # Ищем сеанс для этого билета
+        seance = db.query(models.Seance).filter(models.Seance.id == ticket.seance_id).first()
+        
+        # Безопасно вытаскиваем данные фильма и зала, если они есть
+        film_title = seance.film.title if (seance and seance.film) else "Фильм"
+        hall_name = seance.hall.name if (seance and seance.hall) else "Зал"
+        start_time = seance.start_date_time if seance else datetime.now()
+        base_price = seance.base_price if seance else 0
+        
+        # Ищем ряд и место кресла
+        seat = db.query(models.Seat).filter(models.Seat.id == ticket.seat_id).first()
+        row_num = seat.row_number if seat else 1
+        seat_num = seat.seat_number if seat else 1
+
+        result.append({
+            "id": ticket.id,
+            "status": ticket.status,
+            "seance": {
+                "start_date_time": start_time,
+                "base_price": base_price,
+                "film": {
+                    "title": film_title
+                },
+                "hall": {
+                    "name": hall_name
+                }
+            },
+            "seat": {
+                "row_number": row_num,
+                "seat_number": seat_num
+            }
+        })
+        
+    return result
+
+@app.delete("/api/tickets/{ticket_id}", tags=["Tickets"])
+def delete_user_ticket(ticket_id: int, db: Session = Depends(get_db)):
+    # Ищем билет в базе данных
+    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Билет не найден")
+    
+    # Удаляем билет (место в зале снова станет свободным и зеленым!)
+    db.delete(ticket)
+    db.commit()
+    return {"message": "Бронирование успешно отменено"}
