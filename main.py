@@ -200,3 +200,26 @@ def admin_delete_seance(seance_id: int, db: Session = Depends(get_db)):
     db.delete(seance)
     db.commit()
     return {"message": "Сеанс успешно удален из расписания"}
+
+@app.put("/api/admin/films/{film_id}", response_model=schemas.FilmResponse, tags=["Admin Panel"])
+def admin_update_film(film_id: int, film_data: schemas.FilmCreate, db: Session = Depends(get_db)):
+    film = db.query(models.Film).filter(models.Film.id == film_id).first()
+    if not film:
+        raise HTTPException(status_code=404, detail="Фильм не найден")
+    film.title = film_data.title
+    film.description = film_data.description
+    film.duration_min = film_data.duration_min
+    film.age_rating = film_data.age_rating
+    film.poster_url = film_data.poster_url
+    db.commit()
+    db.refresh(film)
+    return film
+
+@app.delete("/api/admin/films/{film_id}", tags=["Admin Panel"])
+def admin_delete_film(film_id: int, db: Session = Depends(get_db)):
+    film = db.query(models.Film).filter(models.Film.id == film_id).first()
+    if not film:
+        raise HTTPException(status_code=404, detail="Фильм не найден")
+    db.delete(film)
+    db.commit()
+    return {"message": "Фильм успешно удален из афиши"}
