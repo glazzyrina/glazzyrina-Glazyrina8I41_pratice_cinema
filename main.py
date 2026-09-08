@@ -177,15 +177,28 @@ def sell_ticket(ticket_data: schemas.TicketBook, db: Session = Depends(get_db)):
     return {"message": "Билет успешно продан кассиром"}
 
 
-@app.post("/api/tickets/{ticket_id}/cancel", tags=["Cashier Desk"])
-def cancel_or_refund_ticket(ticket_id: int, db: Session = Depends(get_db)):
-    ticket = db.query(models.Ticket).filter(models.Ticket.id == ticket_id).first()
+@app.post("/api/tickets/cancel", tags=["Cashier Desk"])
+def cashier_cancel_ticket(ticket_data: dict, db: Session = Depends(get_db)):
+    # Проверяем оба возможных названия ключа, которые мог прислать фронтенд
+    seance_id = ticket_data.get("seance_id")
+    seat_id = ticket_data.get("seat_id") or ticket_data.get("id")
+    
+    # Если фронтенд прислал пустоту, не даем Python упасть в ошибку 500
+    if seance_id is None or seat_id is None:
+        raise HTTPException(status_code=400, detail="Отсутствуют обязательные поля seance_id или seat_id")
+    
+    # Ищем билет в базе по сеансу и месту
+    ticket = db.query(models.Ticket).filter(
+        models.Ticket.seance_id == int(seance_id),
+        models.Ticket.seat_id == int(seat_id)
+    ).first()
+    
     if not ticket:
-        raise HTTPException(status_code=404, detail="Билет не найден")
+        raise HTTPException(status_code=404, detail="Билет или бронь на это место не найдены в базе данных")
+    
     db.delete(ticket)
     db.commit()
-    return {"message": "Операция отменена, место успешно освобождено"}
-
+    return {"message": "Билет успешно аннулирован кассиром"}
 
 # ADMIN PANEL
 
@@ -318,3 +331,27 @@ def delete_user_ticket(ticket_id: int, db: Session = Depends(get_db)):
     db.delete(ticket)
     db.commit()
     return {"message": "Бронирование успешно отменено"}
+
+
+@app.get("/api/admin/employees", tags=["Admin Panel"])
+def get_all_employees(db: Session = Depends(get_db)):
+    # Вытаскиваем из базы данных только Кассиров и Администраторов (посетителей скрываем)
+    employees = db.query(models.User).filter(models.User.role.in_(["Кассир", "Администратор"])).all()
+    return employees
+
+@app.delete("/api/admin/employees/{user_id}", tags=["Admin Panel"])
+def delete_employee(user_id: int, admin_username: str, db: Session = Depends(get_db)):
+    # 1. Находим в базе данных самого увольняемого сотрудника
+    employee = db.query(models.User).filter(models.User.id == user_id).first()
+    if not employee:
+        raise HTTPException(status_code=404, detail="Сотрудник не найден")
+        
+    # 2. Железная защита на бэкенде: сравниваем логин увольняемого с логином того, кто нажал на кнопку
+    if employee.username == admin_username:
+        raise HTTPException(status_code=400, detail="Вы не можете удалить свою собственную учетную запись администратора!")
+    
+    # 3. Если всё в порядке — удаляем
+    db.delete(employee)
+    db.commit()
+    return {"message": "Сотрудник успешно удален из системы"}
+

@@ -24,6 +24,12 @@ const AdminPage = () => {
     const [successMsg, setSuccessMsg] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
 
+    const [employees, setEmployees] = useState([]);
+
+    const [empUsername, setEmpUsername] = useState('');
+    const [empPassword, setEmpPassword] = useState('');
+    const [empRole, setEmpRole] = useState('Кассир');
+
     useEffect(() => {
         loadData();
     }, []);
@@ -33,11 +39,15 @@ const AdminPage = () => {
             const filmsRes = await API.get('/api/films');
             const hallsRes = await API.get('/api/halls');
             const seancesRes = await API.get('/api/seances');
+
+            const empRes = await API.get('/api/admin/employees');
+
             setFilms(filmsRes.data);
             setHalls(hallsRes.data);
             setSeances(seancesRes.data);
+            setEmployees(empRes.data); // Сохраняем в состояние
         } catch (err) {
-            console.error('Ошибка загрузки данных в панель управления:', err);
+            console.error('Ошибка загрузки данных:', err);
         }
     };
 
@@ -139,6 +149,41 @@ const AdminPage = () => {
             loadData();
         } catch (err) {
             setErrorMsg('Ошибка при удалении сеанса');
+        }
+    };
+
+    const handleCreateEmployee = async (e) => {
+        e.preventDefault();
+        setSuccessMsg('');
+        setErrorMsg('');
+        try {
+            await API.post('/api/admin/employees', {
+                username: empUsername,
+                password: empPassword,
+                role: empRole
+            });
+            loadData(); 
+            setSuccessMsg(`Сотрудник ${empUsername} успешно добавлен в систему!`);
+            setEmpUsername(''); setEmpPassword('');
+
+        } catch (err) {
+            setErrorMsg(err.response?.data?.detail || 'Ошибка при регистрации сотрудника');
+        }
+    };
+
+    const handleDeleteEmployee = async (id, name) => {
+        if (!window.confirm(`Вы уверены, что хотите уволить и удалить сотрудника ${name}?`)) return;
+        try {
+            // Достаем логин текущего админа из памяти браузера
+            const currentAdminName = localStorage.getItem('username');
+
+            // Отправляем DELETE-запрос, прикрепив имя админа в параметры (?admin_username=...)
+            await API.delete(`/api/admin/employees/${id}?admin_username=${currentAdminName}`);
+            
+            setSuccessMsg(`Сотрудник ${name} успешно удален.`);
+            loadData(); // Перезагружаем таблицу штата
+        } catch (err) {
+            setErrorMsg(err.response?.data?.detail || 'Ошибка при удалении сотрудника');
         }
     };
 
@@ -269,6 +314,71 @@ const AdminPage = () => {
                         </tbody>
                     </table>
                     {seances.length === 0 && <p style={{ color: '#888', textAlign: 'center', marginTop: '20px' }}>Сеансы еще не добавлены...</p>}
+                </div>
+                {/* Управление персоналом: Форма + Таблица */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '40px', marginTop: '40px' }}>
+                    {/* Форма создания */}
+                    <div style={{ background: '#1e1e1e', padding: '25px', borderRadius: '12px', border: '1px solid #333' }}>
+                        <h2 style={{ marginTop: 0, marginBottom: '20px' }}>👥 Регистрация сотрудников</h2>
+                        <form onSubmit={handleCreateEmployee} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <input type="text" placeholder="Логин сотрудника" required value={empUsername} onChange={e => setEmpUsername(e.target.value)} style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '6px' }} />
+                            <input type="password" placeholder="Пароль" required value={empPassword} onChange={e => setEmpPassword(e.target.value)} style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '6px' }} />
+                            <div>
+                                <label style={{ color: '#aaa', marginRight: '10px', fontSize: '14px' }}>Роль в системе:</label>
+                                <select value={empRole} onChange={e => setEmpRole(e.target.value)} style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '6px' }}>
+                                    <option value="Кассир">Кассир</option>
+                                    <option value="Администратор">Администратор</option>
+                                </select>
+                            </div>
+                            <button type="submit" style={{ padding: '12px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Зарегистрировать сотрудника</button>
+                        </form>
+                    </div>
+
+                    {/* Таблица текущего штата */}
+                    <div style={{ background: '#1e1e1e', padding: '25px', borderRadius: '12px', border: '1px solid #333' }}>
+                        <h2 style={{ marginTop: 0, marginBottom: '20px' }}>📋 Текущий штат сотрудников</h2>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid #333', color: '#aaa' }}>
+                                    <th style={{ padding: '10px' }}>Логин</th>
+                                    <th style={{ padding: '10px' }}>Должность</th>
+                                    <th style={{ padding: '10px' }}>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {employees.map(emp => (
+                                    <tr key={emp.id} style={{ borderBottom: '1px solid #222' }}>
+                                        <td style={{ padding: '10px', fontWeight: 'bold' }}>{emp.username}</td>
+                                        <td style={{ padding: '10px' }}>
+                                            <span style={{ background: emp.role === 'Администратор' ? '#ffc107' : '#28a745', color: emp.role === 'Администратор' ? '#000' : '#fff', padding: '3px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
+                                                {emp.role}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '10px' }}>
+                                            <button 
+                                                onClick={() => handleDeleteEmployee(emp.id, emp.username)} 
+                                                // Если имя сотрудника совпадает с текущим админом, кнопка отключается
+                                                disabled={emp.username === localStorage.getItem('username')}
+                                                style={{ 
+                                                    background: emp.username === localStorage.getItem('username') ? '#333' : '#dc3545', 
+                                                    color: emp.username === localStorage.getItem('username') ? '#888' : '#fff', 
+                                                    border: 'none', 
+                                                    padding: '6px 12px', 
+                                                    borderRadius: '4px', 
+                                                    cursor: emp.username === localStorage.getItem('username') ? 'not-allowed' : 'pointer', 
+                                                    fontWeight: 'bold', 
+                                                    fontSize: '13px' 
+                                                }}
+                                                title={emp.username === localStorage.getItem('username') ? "Вы не можете удалить самого себя" : ""}
+                                            >
+                                                🗑 Уволить
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </div>

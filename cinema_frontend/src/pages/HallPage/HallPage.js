@@ -39,17 +39,22 @@ const HallPage = () => {
     }, [seanceId]);
 
     const handleSeatClick = (seat) => {
-        if (seat.status !== 'Свободно') return;
-        // Ищем, выбрано ли уже кресло по совпадению ряда и места
-        const isAlreadySelected = selectedSeats.some(s => s.row_number === seat.row_number && s.seat_number === seat.seat_number);
+        if (userRole !== 'Кассир' && seat.status !== 'Свободно') return;
 
-        if (isAlreadySelected) {
-            setSelectedSeats(selectedSeats.filter(s => !(s.row_number === seat.row_number && s.seat_number === seat.seat_number)));
+        // Если кассир нажал на уже занятое/забронированное место
+        if (seat.status !== 'Свободно') {
+            // Запоминаем это конкретное место в массив, чтобы боковая панель видела его координаты
+            setSelectedSeats([seat]);
+            return;
+        }
+
+        // Логика для свободных мест (мультивыбор)
+        if (selectedSeats.find(s => s.id === seat.id)) {
+            setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
         } else {
-            setSelectedSeats([...selectedSeats, seat]);
+            setSelectedSeats([...selectedSeats.filter(s => s.status === 'Свободно'), seat]);
         }
     };
-
 
     const handleAction = async (actionType) => {
         if (selectedSeats.length === 0) {
@@ -80,6 +85,27 @@ const HallPage = () => {
         }
 
     };
+
+    const handleCancelTicket = async () => {
+        if (selectedSeats.length === 0) return;
+        const targetSeat = selectedSeats[0]; 
+        if (!targetSeat || targetSeat.status === 'Свободно') return;
+        if (!window.confirm(`Аннулировать билет: Ряд ${targetSeat.row_number} Место ${targetSeat.seat_number} и вернуть в продажу?`)) return;
+
+        try {
+            await API.post('/api/tickets/cancel', {
+                seance_id: Number(seanceId),
+                seat_id: Number(targetSeat.seat_id || targetSeat.id) // Проверяем оба ключа
+            });
+            setSuccess('Билет успешно аннулирован!');
+            setSelectedSeats([]);
+            loadHallData(); 
+        } catch (err) {
+            console.error("Ошибка отмены билета кассиром:", err.response?.data);
+            setError('Не удалось аннулировать билет.');
+        }
+    };
+
 
     const getSeatColor = (seat) => {
         // Подсвечиваем желтым только если совпадают и ряд, и место
@@ -125,18 +151,21 @@ const HallPage = () => {
                                             <button
                                                 key={seat.id}
                                                 onClick={() => handleSeatClick(seat)}
-                                                disabled={seat.status !== 'Свободно'}
+                                                // Кассиру блокировать кнопки нельзя, он должен уметь нажимать на любые места для возврата!
+                                                disabled={userRole !== 'Кассир' && seat.status !== 'Свободно'}
                                                 style={{
                                                     width: isVip ? '42px' : '35px',
                                                     height: isVip ? '42px' : '35px',
                                                     background: getSeatColor(seat),
                                                     border: 'none',
                                                     borderRadius: '6px',
-                                                    cursor: seat.status === 'Свободно' ? 'pointer' : 'not-allowed',
+                                                    // Для кассира курсор всегда будет кликабельным указателем (pointer)
+                                                    cursor: (userRole === 'Кассир' || seat.status === 'Свободно') ? 'pointer' : 'not-allowed',
                                                     color: '#fff',
                                                     fontWeight: 'bold',
                                                     fontSize: isVip ? '14px' : '12px',
-                                                    opacity: seat.status === 'Свободно' ? 1 : 0.4
+                                                    // Для кассира все кресла остаются яркими и сочными
+                                                    opacity: (userRole === 'Кассир' || seat.status === 'Свободно') ? 1 : 0.4
                                                 }}
                                             >
                                                 {seat.seat_number}
@@ -188,10 +217,18 @@ const HallPage = () => {
                         {success && <div style={{ width: '100%', background: '#28a745', padding: '10px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px', textAlign: 'center', boxSizing: 'border-box' }}>{success}</div>}
 
                         {userRole === 'Кассир' ? (
-                            <button onClick={() => handleAction('sell')} style={{ width: '100%', padding: '14px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
-                                💵 Оформить продажу
-                            </button>
-                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {selectedSeats[0]?.status === 'Свободно' || selectedSeats.length === 0 ? (
+                                    <button onClick={() => handleAction('sell')} style={{ width: '100%', padding: '14px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
+                                        💵 Оформить продажу
+                                    </button>
+                                ) : (
+                                    <button onClick={handleCancelTicket} style={{ width: '100%', padding: '14px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
+                                        ❌ Аннулировать / Возврат билета
+                                    </button>
+                                )}
+                            </div>
+                        ) : (                        
                             <button onClick={() => handleAction('book')} style={{ width: '100%', padding: '14px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
                                 🔒 Забронировать места
                             </button>
