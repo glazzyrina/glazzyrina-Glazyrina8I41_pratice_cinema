@@ -41,18 +41,23 @@ const HallPage = () => {
     const handleSeatClick = (seat) => {
         if (userRole !== 'Кассир' && seat.status !== 'Свободно') return;
 
-        // Если кассир нажал на уже занятое/забронированное место
         if (seat.status !== 'Свободно') {
-            // Запоминаем это конкретное место в массив, чтобы боковая панель видела его координаты
             setSelectedSeats([seat]);
             return;
         }
 
-        // Логика для свободных мест (мультивыбор)
-        if (selectedSeats.find(s => s.id === seat.id)) {
-            setSelectedSeats(selectedSeats.filter(s => s.id !== seat.id));
+
+        const hasBusySeats = selectedSeats.some(s => s.status !== 'Свободно');
+        let currentSelected = hasBusySeats ? [] : [...selectedSeats];
+
+        const isAlreadySelected = currentSelected.some(s => s.row_number === seat.row_number && s.seat_number === seat.seat_number);
+
+        if (isAlreadySelected) {
+            // Если место уже было выбрано — убираем его из списка по координатам
+            setSelectedSeats(currentSelected.filter(s => !(s.row_number === seat.row_number && s.seat_number === seat.seat_number)));
         } else {
-            setSelectedSeats([...selectedSeats.filter(s => s.status === 'Свободно'), seat]);
+            // Иначе добавляем новое свободное кресло в список мультивыбора
+            setSelectedSeats([...currentSelected, seat]);
         }
     };
 

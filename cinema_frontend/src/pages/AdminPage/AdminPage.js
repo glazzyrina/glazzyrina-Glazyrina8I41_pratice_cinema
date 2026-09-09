@@ -44,7 +44,8 @@ const AdminPage = () => {
 
             setFilms(filmsRes.data);
             setHalls(hallsRes.data);
-            setSeances(seancesRes.data);
+            const sortedSeances = seancesRes.data.sort((a, b) => new Date(a.start_date_time) - new Date(b.start_date_time));
+            setSeances(sortedSeances);
             setEmployees(empRes.data); // Сохраняем в состояние
         } catch (err) {
             console.error('Ошибка загрузки данных:', err);
