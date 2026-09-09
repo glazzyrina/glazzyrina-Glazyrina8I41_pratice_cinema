@@ -54,7 +54,7 @@ const SchedulePage = () => {
         <div style={{ background: '#121212', minHeight: '100vh', color: '#fff', paddingBottom: '40px' }}>
             <Header />
             <div style={{ padding: '20px 40px', maxWidth: '1000px', margin: '0 auto' }}>
-                <h1 style={{ marginTop: '20px', marginBottom: '30px' }}>📅 Расписание киносеансов</h1>
+                <h1 style={{ marginTop: '20px', marginBottom: '30px' }}>Расписание киносеансов</h1>
 
                 {/* Лента дат (Кнопки переключения дней) */}
                 <div style={{ display: 'flex', gap: '15px', marginBottom: '40px', overflowX: 'auto', paddingBottom: '10px' }}>

@@ -50,7 +50,7 @@ const AuthPage = () => {
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '80px' }}>
                 <div style={{ background: '#1e1e1e', padding: '40px', borderRadius: '12px', width: '100%', maxWidth: '400px', border: '1px solid #292929', boxSizing: 'border-box' }}>
                     <h2 style={{ textAlign: 'center', marginBottom: '30px', marginTop: 0 }}>
-                        {isLogin ? '🔑 Вход в систему' : '📝 Регистрация'}
+                        {isLogin ? 'Вход в систему' : 'Регистрация'}
                     </h2>
 
                     {error && (

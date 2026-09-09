@@ -46,13 +46,12 @@ const AdminPage = () => {
             setHalls(hallsRes.data);
             const sortedSeances = seancesRes.data.sort((a, b) => new Date(a.start_date_time) - new Date(b.start_date_time));
             setSeances(sortedSeances);
-            setEmployees(empRes.data); // Сохраняем в состояние
+            setEmployees(empRes.data);
         } catch (err) {
             console.error('Ошибка загрузки данных:', err);
         }
     };
 
-    // Функция добавления/обновления фильма
     const handleSaveFilm = async (e) => {
         e.preventDefault();
         setSuccessMsg('');
@@ -104,7 +103,6 @@ const AdminPage = () => {
         }
     };
 
-    // Функция добавления/обновления сеанса
     const handleSaveSeance = async (e) => {
         e.preventDefault();
         setSuccessMsg('');
@@ -175,7 +173,6 @@ const AdminPage = () => {
     const handleDeleteEmployee = async (id, name) => {
         if (!window.confirm(`Вы уверены, что хотите уволить и удалить сотрудника ${name}?`)) return;
         try {
-            // Достаем логин текущего админа из памяти браузера
             const currentAdminName = localStorage.getItem('username');
 
             // Отправляем DELETE-запрос, прикрепив имя админа в параметры (?admin_username=...)
@@ -192,7 +189,7 @@ const AdminPage = () => {
         <div style={{ background: '#121212', minHeight: '100vh', color: '#fff', paddingBottom: '40px' }}>
             <Header />
             <div style={{ padding: '20px 40px', maxWidth: '1200px', margin: '0 auto' }}>
-                <h1 style={{ borderBottom: '1px solid #333', paddingBottom: '10px' }}>⚙️ Панель администрирования</h1>
+                <h1 style={{ borderBottom: '1px solid #333', paddingBottom: '10px' }}>Панель администрирования</h1>
 
                 {successMsg && <div style={{ background: '#28a745', padding: '12px', borderRadius: '6px', marginBottom: '20px', textAlign: 'center' }}>{successMsg}</div>}
                 {errorMsg && <div style={{ background: '#dc3545', padding: '12px', borderRadius: '6px', marginBottom: '20px', textAlign: 'center' }}>{errorMsg}</div>}
@@ -202,7 +199,7 @@ const AdminPage = () => {
                     {/* Форма 1: Управление фильмом */}
                     <div style={{ background: '#1e1e1e', padding: '25px', borderRadius: '12px', border: editingFilmId ? '1px solid #ffc107' : '1px solid #292929' }}>
                         <h2 style={{ marginTop: 0, marginBottom: '20px', color: editingFilmId ? '#ffc107' : '#fff' }}>
-                            {editingFilmId ? '📝 Редактировать фильм' : '🎬 Добавить новый фильм'}
+                            {editingFilmId ? 'Редактировать фильм' : 'Добавить новый фильм'}
                         </h2>
                         <form onSubmit={handleSaveFilm} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             <input type="text" placeholder="Название фильма" required value={title} onChange={e => setTitle(e.target.value)} style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '6px' }} />
@@ -231,7 +228,7 @@ const AdminPage = () => {
                     {/* Форма 2: Назначение / Редактирование сеанса */}
                     <div style={{ background: '#1e1e1e', padding: '25px', borderRadius: '12px', border: editingSeanceId ? '1px solid #ffc107' : '1px solid #292929' }}>
                         <h2 style={{ marginTop: 0, marginBottom: '20px', color: editingSeanceId ? '#ffc107' : '#fff' }}>
-                            {editingSeanceId ? '📝 Редактировать сеанс' : '📅 Назначить сеанс'}
+                            {editingSeanceId ? 'Редактировать сеанс' : 'Назначить сеанс'}
                         </h2>
                         <form onSubmit={handleSaveSeance} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             <select required value={selectedFilm} onChange={e => setSelectedFilm(e.target.value)} style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '6px' }}>
@@ -256,7 +253,7 @@ const AdminPage = () => {
 
                 {/* ТАБЛИЦА 1: Управление Фильмами в афише */}
                 <div style={{ marginTop: '40px', background: '#1e1e1e', padding: '25px', borderRadius: '12px', border: '1px solid #292929' }}>
-                    <h2 style={{ marginTop: 0, marginBottom: '20px' }}>📋 Фильмы в текущем прокате</h2>
+                    <h2 style={{ marginTop: 0, marginBottom: '20px' }}>Фильмы в текущем прокате</h2>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
                             <tr style={{ borderBottom: '2px solid #333', color: '#aaa' }}>
@@ -277,7 +274,7 @@ const AdminPage = () => {
                                     <td style={{ padding: '10px' }}>{f.duration_min} мин.</td>
                                     <td style={{ padding: '10px', color: '#007bff', fontWeight: 'bold' }}>{f.age_rating}</td>
                                     <td style={{ padding: '10px' }}>
-                                        <button onClick={() => startEditFilm(f)} style={{ background: '#ffc107', color: '#000', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>✏️ Редактировать</button>
+                                        <button onClick={() => startEditFilm(f)} style={{ background: '#ffc107', color: '#000', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>Редактировать</button>
                                         <button onClick={() => handleDeleteFilm(f.id)} style={{ background: '#dc3545', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>🗑 Удалить фильм</button>
                                     </td>
                                 </tr>
@@ -288,7 +285,7 @@ const AdminPage = () => {
 
                 {/* ТАБЛИЦА 2: Управление Расписанием Сеансов */}
                 <div style={{ marginTop: '40px', background: '#1e1e1e', padding: '25px', borderRadius: '12px', border: '1px solid #292929' }}>
-                    <h2 style={{ marginTop: 0, marginBottom: '20px' }}>📋 Текущие сеансы в системе</h2>
+                    <h2 style={{ marginTop: 0, marginBottom: '20px' }}>Текущие сеансы в системе</h2>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
                             <tr style={{ borderBottom: '2px solid #333', color: '#aaa' }}>
@@ -307,7 +304,7 @@ const AdminPage = () => {
                                     <td style={{ padding: '10px' }}>{new Date(s.start_date_time).toLocaleString()}</td>
                                     <td style={{ padding: '10px', color: '#28a745', fontWeight: 'bold' }}>{s.base_price} руб.</td>
                                     <td style={{ padding: '10px' }}>
-                                        <button onClick={() => startEditSeance(s)} style={{ background: '#ffc107', color: '#000', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>✏️ Редактировать</button>
+                                        <button onClick={() => startEditSeance(s)} style={{ background: '#ffc107', color: '#000', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', marginRight: '10px' }}>Редактировать</button>
                                         <button onClick={() => handleDeleteSeance(s.id)} style={{ background: '#dc3545', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>🗑 Удалить</button>
                                     </td>
                                 </tr>
@@ -320,7 +317,7 @@ const AdminPage = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '40px', marginTop: '40px' }}>
                     {/* Форма создания */}
                     <div style={{ background: '#1e1e1e', padding: '25px', borderRadius: '12px', border: '1px solid #333' }}>
-                        <h2 style={{ marginTop: 0, marginBottom: '20px' }}>👥 Регистрация сотрудников</h2>
+                        <h2 style={{ marginTop: 0, marginBottom: '20px' }}>Регистрация сотрудников</h2>
                         <form onSubmit={handleCreateEmployee} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                             <input type="text" placeholder="Логин сотрудника" required value={empUsername} onChange={e => setEmpUsername(e.target.value)} style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '6px' }} />
                             <input type="password" placeholder="Пароль" required value={empPassword} onChange={e => setEmpPassword(e.target.value)} style={{ padding: '10px', background: '#222', border: '1px solid #333', color: '#fff', borderRadius: '6px' }} />
@@ -337,7 +334,7 @@ const AdminPage = () => {
 
                     {/* Таблица текущего штата */}
                     <div style={{ background: '#1e1e1e', padding: '25px', borderRadius: '12px', border: '1px solid #333' }}>
-                        <h2 style={{ marginTop: 0, marginBottom: '20px' }}>📋 Текущий штат сотрудников</h2>
+                        <h2 style={{ marginTop: 0, marginBottom: '20px' }}>Текущий штат сотрудников</h2>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ borderBottom: '2px solid #333', color: '#aaa' }}>

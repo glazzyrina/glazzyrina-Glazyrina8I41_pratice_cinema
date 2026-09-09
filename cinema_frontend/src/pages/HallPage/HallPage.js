@@ -42,10 +42,15 @@ const HallPage = () => {
         if (userRole !== 'Кассир' && seat.status !== 'Свободно') return;
 
         if (seat.status !== 'Свободно') {
-            setSelectedSeats([seat]);
+            const isAlreadySelected = selectedSeats.some(s => s.row_number === seat.row_number && s.seat_number === seat.seat_number);
+            
+            if (isAlreadySelected) {
+                setSelectedSeats([]);
+            } else {
+                setSelectedSeats([seat]);
+            }
             return;
         }
-
 
         const hasBusySeats = selectedSeats.some(s => s.status !== 'Свободно');
         let currentSelected = hasBusySeats ? [] : [...selectedSeats];
@@ -53,10 +58,8 @@ const HallPage = () => {
         const isAlreadySelected = currentSelected.some(s => s.row_number === seat.row_number && s.seat_number === seat.seat_number);
 
         if (isAlreadySelected) {
-            // Если место уже было выбрано — убираем его из списка по координатам
             setSelectedSeats(currentSelected.filter(s => !(s.row_number === seat.row_number && s.seat_number === seat.seat_number)));
         } else {
-            // Иначе добавляем новое свободное кресло в список мультивыбора
             setSelectedSeats([...currentSelected, seat]);
         }
     };
@@ -192,13 +195,13 @@ const HallPage = () => {
 
                     {/* Боковая панель оформления заказа */}
                     <div style={{ flex: 1, background: '#1e1e1e', padding: '25px', borderRadius: '12px', border: '1px solid #292929', height: 'fit-content' }}>
-                        <h2 style={{ marginTop: 0, fontSize: '22px', borderBottom: '1px solid #333', paddingBottom: '15px' }}>🛒 Оформление</h2>
+                        <h2 style={{ marginTop: 0, fontSize: '22px', borderBottom: '1px solid #333', paddingBottom: '15px' }}>Оформление</h2>
                         
                         <div style={{ margin: '20px 0', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '15px' }}>
-                            <p style={{ margin: 0 }}>🎬 Фильм: <strong style={{ color: '#fff' }}>{seanceInfo.film?.title}</strong></p>
-                            <p style={{ margin: 0 }}>📍 Зал: <strong style={{ color: isVip ? '#ffc107' : '#fff' }}>{seanceInfo.hall?.name}</strong></p>
-                            <p style={{ margin: 0 }}>🕒 Начало: <strong style={{ color: '#ffc107' }}>{new Date(seanceInfo.start_date_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</strong></p>
-                            <p style={{ margin: 0 }}>📅 Дата: <strong>{new Date(seanceInfo.start_date_time).toLocaleDateString('ru-RU')}</strong></p>
+                            <p style={{ margin: 0 }}>Фильм: <strong style={{ color: '#fff' }}>{seanceInfo.film?.title}</strong></p>
+                            <p style={{ margin: 0 }}>Зал: <strong style={{ color: isVip ? '#ffc107' : '#fff' }}>{seanceInfo.hall?.name}</strong></p>
+                            <p style={{ margin: 0 }}>Начало: <strong style={{ color: '#ffc107' }}>{new Date(seanceInfo.start_date_time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</strong></p>
+                            <p style={{ margin: 0 }}>Дата: <strong>{new Date(seanceInfo.start_date_time).toLocaleDateString('ru-RU')}</strong></p>
                         </div>
 
                         <div style={{ background: '#121212', borderRadius: '8px', padding: '15px', margin: '20px 0' }}>
@@ -225,17 +228,17 @@ const HallPage = () => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 {selectedSeats[0]?.status === 'Свободно' || selectedSeats.length === 0 ? (
                                     <button onClick={() => handleAction('sell')} style={{ width: '100%', padding: '14px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
-                                        💵 Оформить продажу
+                                        Оформить продажу
                                     </button>
                                 ) : (
                                     <button onClick={handleCancelTicket} style={{ width: '100%', padding: '14px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
-                                        ❌ Аннулировать / Возврат билета
+                                        Аннулировать / Возврат билета
                                     </button>
                                 )}
                             </div>
                         ) : (                        
                             <button onClick={() => handleAction('book')} style={{ width: '100%', padding: '14px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
-                                🔒 Забронировать места
+                                Забронировать места
                             </button>
                         )}
                     </div>
